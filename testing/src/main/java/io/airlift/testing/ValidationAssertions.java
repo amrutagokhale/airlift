@@ -18,7 +18,6 @@ package io.airlift.testing;
 import com.google.common.annotations.Beta;
 import org.apache.bval.jsr.ApacheValidationProvider;
 
-import javax.annotation.concurrent.GuardedBy;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -33,7 +32,7 @@ import static org.testng.Assert.fail;
 @Beta
 public class ValidationAssertions
 {
-    @GuardedBy("VALIDATOR")
+    @net.jcip.annotations.GuardedBy("VALIDATOR")
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
 
     private static <T> Set<ConstraintViolation<T>> validate(T object)

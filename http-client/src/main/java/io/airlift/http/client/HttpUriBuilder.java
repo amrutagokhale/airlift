@@ -56,7 +56,13 @@ public class HttpUriBuilder
         scheme = previous.getScheme();
         host = previous.getHost();
         port = previous.getPort();
-        path = Optional.ofNullable(previous.getRawPath()).map(HttpUriBuilder::percentDecode).orElse(null);
+        /*
+         * URI with a "http" scheme cannot have null path. Only opaque URIs can have null path.
+         * An opaque URI is an absolute URI whose scheme-specific part does not begin with a slash character ('/').
+         * So, if a URI has a null path, you should reject it.
+         * https://stackoverflow.com/questions/18519260/is-it-ever-possible-for-the-getpath-method-of-a-java-net-uri-object-to-return-nu
+         */
+        path = Optional.ofNullable(previous.getRawPath()).map(HttpUriBuilder::percentDecode).orElse("");
         params.putAll(parseParams(previous.getRawQuery()));
     }
 
@@ -70,6 +76,33 @@ public class HttpUriBuilder
         requireNonNull(uri, "uri is null");
 
         return new HttpUriBuilder(uri);
+    }
+
+    private HttpUriBuilder(URI previous, String newPath)
+    {
+        requireNonNull(previous, "previous is null");
+
+        if (previous.getPath() != null) {
+            scheme = previous.getScheme();
+            host = previous.getHost();
+            port = previous.getPort();
+            path = newPath.concat(newPath);
+            params.putAll(parseParams(previous.getRawQuery()));
+        }
+        else {
+            scheme = previous.getScheme();
+            host = previous.getHost();
+            port = previous.getPort();
+            path = newPath;
+            params.putAll(parseParams(previous.getRawQuery()));
+        }
+    }
+
+    public static HttpUriBuilder uriBuilderFrom(URI uri, String path)
+    {
+        requireNonNull(uri, "uri is null");
+
+        return new HttpUriBuilder(uri, path);
     }
 
     public HttpUriBuilder scheme(String scheme)
@@ -195,6 +228,7 @@ public class HttpUriBuilder
         StringBuilder builder = new StringBuilder();
         builder.append(scheme);
         builder.append("://");
+
         if (host != null) {
             builder.append(host);
         }
@@ -204,12 +238,13 @@ public class HttpUriBuilder
         }
 
         String path = this.path;
-        if (path.equals("") && !params.isEmpty()) {
-            path = "/";
+        if (path != null) {
+            if (path.equals("") && !params.isEmpty()) {
+                path = "/";
+            }
+
+            builder.append(encode(path, ALLOWED_PATH_CHARS));
         }
-
-        builder.append(encode(path, ALLOWED_PATH_CHARS));
-
         if (!params.isEmpty()) {
             builder.append('?');
 

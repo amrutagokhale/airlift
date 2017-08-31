@@ -124,7 +124,22 @@ public class TestHttpUriBuilder
     {
         URI uri = new URI("test-server:8080");
         assertEquals(uri.getRawPath(), null);
-        assertEquals(uri.toASCIIString(), "test-server:8080");
+        uri = uriBuilderFrom(uri).
+                appendPath("/v1/query").
+                build();
+        assertEquals(uri.getRawPath(), "/v1/query");
+        assertEquals(uri.toASCIIString(), "test-server:///v1/query");
+    }
+
+    @Test
+    public void testAppendedPath()
+            throws URISyntaxException
+    {
+        URI uri = new URI("test-server:8080");
+        assertEquals(uri.getRawPath(), null);
+        uri = uriBuilderFrom(uri, "/v1/query").build();
+        assertEquals(uri.getRawPath(), "/v1/query");
+        assertEquals(uri.toASCIIString(), "test-server:///v1/query");
     }
 
     @Test
